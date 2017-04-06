@@ -6,6 +6,7 @@ using System.Web.Mvc;
 using Vidly.Models;
 using Vidly.ViewModels;
 using System.Data.Entity;
+using System.Data.Entity.Validation;
 
 namespace Vidly.Controllers
 {
@@ -18,16 +19,48 @@ namespace Vidly.Controllers
         }
         protected override void Dispose(bool disposing)
         {
-            _context.Dispose();
+            
+                _context.Dispose();
+            
+           
         }
 
+        public ActionResult New()
+        {
+            var genre = _context.Genre.ToList();
+            var viewModel = new MovieFromViewModel
+            {
+                Genre = genre
+            };
 
+            return View("MovieForm" , viewModel);
+        }
+        [HttpPost]
+        public ActionResult Save(Movie movie)
+        {
+            if(movie.Id == 0)
+            {
+                movie.DateAdded = DateTime.Now;
+                _context.Movies.Add(movie);
+            }
+            else
+            {
+                var moviesInDb = _context.Movies.Single(m => m.Id == movie.Id);
 
-
+                moviesInDb.Name = movie.Name;
+                moviesInDb.ReleaseDate = movie.ReleaseDate;
+                moviesInDb.GenreId = movie.GenreId;
+                moviesInDb.NumberInStock = movie.NumberInStock;
+            }
+             _context.SaveChanges();
+           
+           
+            return RedirectToAction("Index", "Movies");
+        }
 
         // GET: Movies
 
-        public ViewResult Index()
+        public ActionResult Index()
         {
             var movies = _context.Movies.Include(m=>m.Genre).ToList();
 
@@ -45,6 +78,25 @@ namespace Vidly.Controllers
             }
 
             return View(movie);
+        }
+
+        public ActionResult Edit(int id)
+        {
+            var movie = _context.Movies.SingleOrDefault(m => m.Id == id);
+
+            if (movie == null)
+             return HttpNotFound(); 
+
+           
+                var viewModel = new MovieFromViewModel
+                {
+                    Movie = movie,
+                    Genre = _context.Genre.ToList()
+
+                };
+             
+            return View("MovieForm",viewModel);
+
         }
 
 
